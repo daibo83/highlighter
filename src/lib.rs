@@ -14,16 +14,21 @@ impl StartsWith<u8> for [u8] {
         }
     }
 }
-
+#[inline(always)]
 pub fn highlight(needles: &[&str], haystack: &str, opening_tag: &str, closing_tag: &str) -> String {
-    let mut haystacks: Vec<String> = haystack.split_whitespace().map(|s| s.to_string()).collect();
+    let mut needles_dedup = needles.to_owned();
+    needles_dedup.dedup();
+    needles_dedup.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
+    let mut haystacks: Vec<String> = haystack.split_whitespace().map(|s| s.to_lowercase()).collect();
     for haystack in haystacks.iter_mut() {
-        for needle in needles.iter() {
+        for needle in needles_dedup.iter() {
             if haystack.as_bytes().starts_with(needle.as_bytes()) {
                 let mut tagged = opening_tag.to_string();
+                tagged.reserve(haystack.len() + closing_tag.len());
                 tagged.push_str(haystack);
                 tagged.push_str(&closing_tag.to_string());
                 *haystack = tagged;
+                break;
             }
         }
     }
@@ -31,6 +36,7 @@ pub fn highlight(needles: &[&str], haystack: &str, opening_tag: &str, closing_ta
     res
 }
 
+#[inline(always)]
 pub fn get_highlight_offsets(needles: &[&str], haystack: &str) -> Vec<(usize, usize)> {
     let mut needles_dedup = needles.to_owned();
     needles_dedup.dedup();
@@ -56,6 +62,27 @@ pub fn get_highlight_offsets(needles: &[&str], haystack: &str) -> Vec<(usize, us
             matches.extend(new_matches);
         }
         matches.append(&mut matches_to_add);
+    }
+    matches
+}
+
+#[inline(always)]
+pub fn get_highlight_offsets_new(needles: &[&str], haystack: &str) -> Vec<(usize, usize)> {
+    let mut needles_dedup = needles.to_owned();
+    needles_dedup.dedup();
+    needles_dedup.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
+    let mut matches: Vec<(usize, usize)> = Vec::with_capacity(10);
+    let mut start = 0;
+    for haystack_part in haystack.split_whitespace() {
+        let haystack_part_lc = haystack_part.to_lowercase();
+        for needle in needles_dedup.iter() {
+            if haystack_part_lc.as_bytes().starts_with(needle.as_bytes()) {
+                
+                matches.push((start, start + haystack_part_lc.len()));
+                break;
+            }
+        }
+        start += haystack_part.len() + 1;
     }
     matches
 }
