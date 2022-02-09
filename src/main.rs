@@ -1,8 +1,8 @@
 use highlighter::{get_highlight_offsets, highlight, get_highlight_offsets_new};
 use std::time::Instant;
 pub fn main() {
-    let needle = ["91", "trung", "kinh"];
-    let haystack = "phuong trung hoa quan cau giay thanh pho ha noi";
+    let needle = ["91", "truong", "kính"];
+    let haystack = "phuong Trương hoa quan cau giay thanh pho ha noi";
     let now = Instant::now();
     let res = highlight(&needle, haystack, "<marked>", "</marked>");
     println!("{:?}, {:?}", res, now.elapsed());

@@ -1,10 +1,74 @@
 use memchr::memmem::Finder;
+///lowercase and remove diacritics
+pub fn preprocess_input(input: &str) -> String {
+    let input = input
+        .trim()
+        .chars()
+        .map(|x| match x {
+            'À' | 'Á' | 'Ả' | 'Ạ' | 'Ã' | 'Â' | 'Ấ' | 'Ầ' | 'Ẩ' | 'Ẫ' | 'Ậ' | 'Ä' | 'Å' | 'Æ'
+            | 'Ă' | 'Ắ' | 'Ằ' | 'Ẵ' | 'Ẳ' | 'Ặ' => 'a',
+            'Þ' => 'b',
+            'Ç' | 'Č' => 'c',
+            'Ď' | 'Ð' => 'd',
+            'Ě' | 'È' | 'É' | 'Ẽ' | 'Ẻ' | 'Ẹ' | 'Ê' | 'Ế' | 'Ề' | 'Ễ' | 'Ể' | 'Ệ' | 'Ë' => {
+                'e'
+            }
+            'Ƒ' => 'f',
+            'Ì' | 'Í' | 'Ĩ' | 'Ỉ' | 'Ị' | 'Î' | 'Ï' => 'i',
+            'Ň' | 'Ñ' => 'n',
+            'Ò' | 'Ó' | 'Õ' | 'Ỏ' | 'Ọ' | 'Ô' | 'Ố' | 'Ồ' | 'Ỗ' | 'Ổ' | 'Ộ' | 'Ơ' | 'Ớ' |'Ờ'|'Ỡ'|'Ở'|'Ợ' |'Ö' | 'Ø' => {
+                'o'
+            }
+            'Ř' => 'r',
+            'Š' => 's',
+            'Ť' => 't',
+            'Ů' | 'Ù' | 'Ú' | 'Ũ' | 'Ủ' | 'Ụ' |'Ư'|'Ứ'|'Ừ'|'Ữ'|'Ử'|'Ự'|'Û' | 'Ü' => 'u',
+            'Ý'|'Ỳ'|'Ỹ'|'Ỷ'|'Ỵ' => 'y',
+            'Ž' => 'z',
 
+            'à' | 'á' | 'ã' | 'ả' | 'ạ' | 'â' | 'ấ' | 'ầ' | 'ẫ' | 'ẩ' | 'ậ' | 'ă' | 'ắ' | 'ằ'
+            | 'ẵ' | 'ẳ' | 'ặ' | 'ä' | 'å' | 'æ' => 'a',
+            'þ' => 'b',
+            'ç' | 'č' => 'c',
+            'ď' | 'ð' |'đ'=> 'd',
+            'ě' | 'è' | 'é' | 'ẽ' | 'ẻ' | 'ẹ' | 'ê' | 'ế' | 'ề' | 'ễ' | 'ể' | 'ệ' | 'ë' => 'e',
+            'ƒ' => 'f',
+            'ì' | 'í' | 'ĩ' | 'ỉ' | 'ị' | 'î' | 'ï' => 'i',
+            'ñ' | 'ň' => 'n',
+            'ò' | 'ó' | 'õ' | 'ỏ' | 'ọ' | 'ô' | 'ố' | 'ồ' | 'ỗ' | 'ổ' | 'ộ' |'ơ'|'ớ'|'ờ'|'ỡ'|'ở'|'ợ'| 'ö' | 'ø' => 'o',
+            'ř' => 'r',
+            'š' => 's',
+            'ť' => 't',
+            'ů' | 'ù' | 'ú' |'ũ'|'ủ'|'ụ'|'ư'|'ứ'|'ừ'|'ữ'|'ử'|'ự'| 'û' | 'ü' => 'u',
+            'ý' |'ỳ'|'ỹ'|'ỷ'|'ỵ'| 'ÿ' => 'y',
+            'ž' => 'z',
+            'A'..='Z' => x.to_ascii_lowercase(),
+            'a'..='z' => x,
+            '0'..='9' => x,
+            _ => ' ',
+        })
+        // .filter(|c| c.is_ascii())
+        .collect::<String>();
+    // input = input
+    //     .chars()
+    //     .map(|x| match x {
+    //         // 'A'..='Z' => x,
+    //         'a'..='z' => x,
+    //         '0'..='9' => x,
+    //         _ => ' ',
+    //     })
+    //     .collect();
+    // input = input.trim().to_string();
+    // input = input.replace('  ', ' ').replace('  ', ' ');
+    // println!("{}", input);
+    input
+}
 pub trait StartsWith<T> {
     fn starts_with(&self, needle: &[T]) -> bool;
 }
 
 impl StartsWith<u8> for [u8] {
+    #[inline(always)]
     fn starts_with(&self, needle: &[u8]) -> bool {
         if needle.len() > self.len() {
             false
@@ -16,18 +80,19 @@ impl StartsWith<u8> for [u8] {
 }
 #[inline(always)]
 pub fn highlight(needles: &[&str], haystack: &str, opening_tag: &str, closing_tag: &str) -> String {
-    let mut needles_dedup = needles.to_owned();
+    let mut needles_dedup = needles.iter().map(|needle| preprocess_input(needle)).collect::<Vec<String>>();
     needles_dedup.dedup();
-    needles_dedup.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
-    let mut haystacks: Vec<String> = haystack.split_whitespace().map(|s| s.to_lowercase()).collect();
-    for haystack in haystacks.iter_mut() {
+    // needles_dedup.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
+    let mut haystacks: Vec<String> = haystack.split_whitespace().map(|s|s.to_owned()).collect();
+    let haystacks_processed: Vec<String> = haystacks.iter().map(|s|preprocess_input(s)).collect();
+    for (i, haystack) in haystacks_processed.iter().enumerate() {
         for needle in needles_dedup.iter() {
             if haystack.as_bytes().starts_with(needle.as_bytes()) {
                 let mut tagged = opening_tag.to_string();
                 tagged.reserve(haystack.len() + closing_tag.len());
-                tagged.push_str(haystack);
+                tagged.push_str(unsafe{haystacks.get_unchecked(i)});
                 tagged.push_str(&closing_tag.to_string());
-                *haystack = tagged;
+                unsafe{*haystacks.get_unchecked_mut(i) = tagged;}
                 break;
             }
         }
